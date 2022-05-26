@@ -1,5 +1,6 @@
 const fs = require('fs')
 const path = require('path')
+const stylesDirr = path.join(__dirname, 'styles') 
 
 fs.promises.mkdir(path.join(__dirname, 'project-dist'), { recursive: true })
 
@@ -14,7 +15,7 @@ fs.readFile(path.join(__dirname, 'template.html'), 'utf-8', (err, data) => {
         let fileName = path.parse(el).name
         let tag = `{{${fileName}}}`
         indexHtml = indexHtml.replace(tag, data)
-        fs.writeFile(path.join(__dirname, 'project-dist', 'index.html'), indexHtml, err =>{
+        fs.writeFile(path.join(__dirname, 'project-dist', 'index.html'), indexHtml, err => {
           if (err) throw err
         })
       })
@@ -22,28 +23,44 @@ fs.readFile(path.join(__dirname, 'template.html'), 'utf-8', (err, data) => {
   })
 })
 
+fs.readdir(stylesDirr, (err, files) => {
+  if (err) throw err
+  let content = ''
+  files.forEach(el => {
+    if (path.extname(el) === '.css') {
+      // Читаем файл
+      let input = fs.createReadStream(path.join(stylesDirr, el), 'utf-8')
+      let output = fs.createWriteStream(path.join(__dirname, 'project-dist', 'styles.css'))
+      // Записываем прочитанное
+      input.on('data', chunk => output.write(content += `${chunk}\n`))
+      input.on('error', err => console.log('Ошибка' + err.message))
+    }
+  })
+
+})
+
 function copyFiles(name = 'assets') {
-  let dirr;
-  let src;
+  let fromDirr
+  let destinationDirr
   if (name === 'assets') {
-    dirr = path.join(__dirname, 'project-dist', name)
-    src = path.join(__dirname)
+    fromDirr = path.join(__dirname, 'project-dist', name)
+    destinationDirr = path.join(__dirname)
   } else {
-    dirr = path.join(__dirname, 'project-dist', 'assets', name)
-    src = path.join(__dirname, 'assets')
+    fromDirr = path.join(__dirname, 'project-dist', 'assets', name)
+    destinationDirr = path.join(__dirname, 'assets')
   }
-  fs.promises.mkdir(dirr, { recursive: true })
+  fs.promises.mkdir(fromDirr, { recursive: true })
   try {
-    fs.readdir(path.join(src, name), (err, files) => {
+    fs.readdir(path.join(destinationDirr, name), (err, files) => {
       if (err) throw err
       files.forEach(el => {
-        fs.stat(path.join(src, name, el), function (err, stats) {
+        fs.stat(path.join(destinationDirr, name, el), function (err, stats) {
           if (err) throw err
           //Проверка объекта на то, что он является файлом
           if (stats.isFile()) {
             fs.promises.copyFile(
-              path.join(src, name, el),
-              path.join(dirr, el)
+              path.join(destinationDirr, name, el),
+              path.join(fromDirr, el)
             )
           } else {
             let folderName = path.parse(el).name
@@ -51,7 +68,7 @@ function copyFiles(name = 'assets') {
           }
         })  
       })
-      fileDel(files, dirr)
+      fileDel(files, fromDirr)
     })
   } catch (err) {
     console.log(err);
