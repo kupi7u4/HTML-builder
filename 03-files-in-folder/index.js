@@ -1,16 +1,20 @@
 const fs = require('fs')
 const path = require('path')
+const pathToFolder = path.join(__dirname, 'secret-folder')
 
-fs.readdir(path.join(__dirname, 'secret-folder'), {withFileTypes: true}, (err, files) => {
+fs.readdir(pathToFolder, (err, files) => {
   if (err) throw err
+
   files.forEach(el => {
-    if (!el.isDirectory()) {
-      fs.stat(path.join(__dirname, 'secret-folder', el.name), (err, stats) => {
-        if (err) throw err
-        let arrName = el.name.split('.')        
+    const pathToFile = path.join(pathToFolder, el)  
+    fs.stat(pathToFile, (err, stats) => {
+      if (err) throw err
+      if (stats.isFile()) {
+        let arrName = el.split('.')        
         arrName.push((stats.size / 1000) + 'kb')
         console.log(arrName.join(' - '))
-      })
-    }
+      }
+    })
   })
+
 })
